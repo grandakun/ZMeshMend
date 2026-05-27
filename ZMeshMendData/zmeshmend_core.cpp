@@ -27,7 +27,13 @@
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/Polygon_mesh_processing/border.h>
 #include <CGAL/Polygon_mesh_processing/repair.h>
+#include <CGAL/Polygon_mesh_processing/repair_polygon_soup.h>
+#include <CGAL/Polygon_mesh_processing/orient_polygon_soup.h>
+#include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
+#include <CGAL/Polygon_mesh_processing/stitch_borders.h>
+#include <CGAL/Polygon_mesh_processing/connected_components.h>
 #include <CGAL/boost/graph/helpers.h>
+#include <CGAL/IO/polygon_soup_io.h>
 
 #include "GoZ_Mesh.h"
 
@@ -43,6 +49,10 @@
 #include <cstring>
 #include <algorithm>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
 typedef Kernel::Point_3                                          Point;
 typedef CGAL::Surface_mesh<Point>                                Mesh;
@@ -56,6 +66,18 @@ static void write_progress(float value)
     {
         pf << static_cast<int>(value * 100.0f) << std::endl;
     }
+}
+
+static bool g_pause_on_exit = false;
+static void pause_if_needed()
+{
+    if (!g_pause_on_exit) return;
+    std::cout << std::endl;
+    std::cout << "===============================================" << std::endl;
+    std::cout << " ZMeshMend CGAL finished. Press Enter to close." << std::endl;
+    std::cout << "===============================================" << std::endl;
+    std::cout.flush();
+    std::cin.get();
 }
 
 static bool load_goz_to_cgal(GoZ_Mesh& goz, Mesh& mesh,
@@ -365,20 +387,95 @@ static void build_goz_from_cgal(const Mesh& mesh,
 
 int main(int argc, char* argv[])
 {
+#ifdef _WIN32
+    {
+        char self[MAX_PATH];
+        DWORD n = GetModuleFileNameA(NULL, self, MAX_PATH);
+        if (n > 0 && n < MAX_PATH)
+        {
+            char* slash = strrchr(self, '\\');
+            if (slash) { *slash = '\0'; SetCurrentDirectoryA(self); }
+        }
+        AllocConsole();
+        freopen("CONOUT$", "w", stdout);
+        freopen("CONOUT$", "w", stderr);
+    }
+    {
+        FILE* s = fopen("zmeshmend_startup.log", "w");
+        if (s) { fprintf(s, "started\n"); fclose(s); }
+    }
+#endif
+    bool zero_arg_mode = false;
+    std::string in_path;
+    std::string out_path;
+    std::string fill_path;
+    std::string debug_obj;
+    bool write_fill_only = false;
+    double opt_min_frac  = 0.0;
+    int    opt_min_faces = 0;
+    bool   opt_full_obj  = true;
+
     if (argc < 3)
     {
-        std::cerr << "ZMeshMend CGAL Core v2.2 (FillOnly)" << std::endl;
-        std::cerr << "Usage: " << argv[0] << " <input> <output> [fill.GoZ] [debug.obj]" << std::endl;
-        std::cerr << "  Input can be .GoZ (preserves PolyGroups/Mask) or .obj (OBJ)" << std::endl;
-        std::cerr << "  Output extension determines format: .obj writes fill-only OBJ patch," << std::endl;
-        std::cerr << "  .GoZ writes full mesh GoZ (legacy)." << std::endl;
-        return 1;
-    }
+        zero_arg_mode = true;
+        //ZCloseHoles mode: read everything from zmeshmend_config.txt,
+        //input = zmeshmend_export.obj, output = zmeshmend_import.obj.
+        in_path  = "zmeshmend_export.obj";
+        out_path = "zmeshmend_import.obj";
 
-    const std::string in_path(argv[1]);
-    const std::string out_path(argv[2]);
-    const bool write_fill_only = (argc >= 4) && (argv[3][0] != '\0');
-    const std::string fill_path = write_fill_only ? std::string(argv[3]) : "";
+        FILE* cf = fopen("zmeshmend_config.txt", "r");
+        if (cf)
+        {
+            char line[256];
+            while (fgets(line, sizeof(line), cf))
+            {
+                int vi = 0; float vf = 0.0f;
+                if (sscanf(line, "maskSharpenPasses=%d", &vi) == 1)      { /*pass*/ }
+                else if (sscanf(line, "maskGrowRings=%d", &vi) == 1)      { /*pass*/ }
+                else if (sscanf(line, "removeSmallFragments=%d", &vi) == 1)
+                {
+                    if (vi) { opt_min_frac = 0.01; opt_min_faces = 50; }
+                }
+                else if (sscanf(line, "fragmentMinFraction=%f", &vf) == 1) { opt_min_frac = vf; }
+                else if (sscanf(line, "fragmentMinFaces=%d", &vi) == 1)   { opt_min_faces = vi; }
+            }
+            fclose(cf);
+
+            if (opt_min_frac <= 0.0 && opt_min_faces <= 0)
+                opt_min_frac = opt_min_faces = 0; //both must be set to enable
+        }
+        //zero-arg mode: always pause so user can see console output.
+        g_pause_on_exit = true;
+    }
+    else
+    {
+    for (int i = 3; i < argc; ++i)
+    {
+        std::string a = argv[i];
+        if (a == "--min-frac" && i + 1 < argc)
+        {
+            opt_min_frac = std::atof(argv[++i]);
+        }
+        else if (a == "--min-faces" && i + 1 < argc)
+        {
+            opt_min_faces = std::atoi(argv[++i]);
+        }
+        else if (a == "--pause")
+        {
+            g_pause_on_exit = true;
+        }
+        else if (a == "--full-obj")
+        {
+            opt_full_obj = true;
+        }
+        else if (!a.empty() && a[0] != '-')
+        {
+            // first positional after out_path -> fill_path; second -> debug_obj
+            if (!write_fill_only) { fill_path = a; write_fill_only = true; }
+            else if (debug_obj.empty()) { debug_obj = a; }
+        }
+    }
+    }
 
     auto ends_with = [](const std::string& s, const std::string& suf) {
         if (s.size() < suf.size()) return false;
@@ -418,23 +515,51 @@ int main(int argc, char* argv[])
     }
     else
     {
-        std::ifstream in(in_path);
-        if (!in || !CGAL::IO::read_OBJ(in, mesh))
+        // Read OBJ as polygon soup, repair (merge duplicate vertices, drop
+        // degenerate/duplicate polygons), orient, then convert to a Surface_mesh.
+        // This is the only way ZBrush-exported OBJs (which often have
+        // un-stitched per-face vertices) become a manifold mesh that CGAL can
+        // detect borders on.
+        std::vector<Point> soup_points;
+        std::vector<std::vector<std::size_t>> soup_polys;
+        if (!CGAL::IO::read_polygon_soup(in_path, soup_points, soup_polys))
         {
-            std::cerr << "ERROR: Cannot read input as GoZ or OBJ: " << in_path << std::endl;
+            std::cerr << "ERROR: Cannot read OBJ as polygon soup: " << in_path << std::endl;
+            pause_if_needed();
+            return 1;
+        }
+        std::cout << "OBJ soup: " << soup_points.size() << " vertices, "
+                  << soup_polys.size() << " polygons" << std::endl;
+
+        PMP::repair_polygon_soup(soup_points, soup_polys);
+        std::cout << "After repair: " << soup_points.size() << " vertices, "
+                  << soup_polys.size() << " polygons" << std::endl;
+
+        if (!PMP::orient_polygon_soup(soup_points, soup_polys))
+        {
+            std::cout << "WARNING: orient_polygon_soup found non-orientable patches." << std::endl;
+        }
+
+        if (!PMP::is_polygon_soup_a_polygon_mesh(soup_polys))
+        {
+            std::cerr << "ERROR: polygon soup is not a valid polygon mesh after repair." << std::endl;
+            pause_if_needed();
             return 1;
         }
 
-        std::cout << "OBJ Input: " << mesh.number_of_vertices() << " vertices, "
-                  << mesh.number_of_faces() << " faces" << std::endl;
+        PMP::polygon_soup_to_polygon_mesh(soup_points, soup_polys, mesh);
 
         if (!CGAL::is_triangle_mesh(mesh))
         {
             std::cout << "Triangulating non-triangle faces..." << std::endl;
             PMP::triangulate_faces(mesh);
-            std::cout << "After triangulation: " << mesh.number_of_vertices()
-                      << " vertices, " << mesh.number_of_faces() << " faces" << std::endl;
         }
+
+        // Stitch any remaining duplicate boundary edges (extra safety).
+        PMP::stitch_borders(mesh);
+
+        std::cout << "OBJ Input (final): " << mesh.number_of_vertices()
+                  << " vertices, " << mesh.number_of_faces() << " faces" << std::endl;
     }
 
     write_progress(0.10f);
@@ -452,6 +577,47 @@ int main(int argc, char* argv[])
         std::cout << "Mesh is watertight - no holes to fill." << std::endl;
         if (out_is_obj_patch)
         {
+            if (opt_full_obj)
+            {
+                // Full mesh OBJ - all faces are original (group_1)
+                std::ofstream out(out_path);
+                if (!out)
+                {
+                    std::cerr << "ERROR: Cannot open OBJ for write: " << out_path << std::endl;
+                    pause_if_needed();
+                    return 1;
+                }
+                out << "# ZMeshMend full mesh (watertight, all original)\n";
+                std::map<Mesh::Vertex_index, std::size_t> vidx;
+                std::size_t vcount = 0;
+                for (auto v : mesh.vertices())
+                {
+                    const auto& p = mesh.point(v);
+                    out << "v " << p.x() << ' ' << p.y() << ' ' << p.z() << '\n';
+                    vidx[v] = ++vcount;
+                }
+                out << "g group_1\n";
+                std::size_t fcount = 0;
+                for (auto f : mesh.faces())
+                {
+                    out << 'f';
+                    auto h0 = mesh.halfedge(f);
+                    auto h = h0;
+                    do
+                    {
+                        out << ' ' << vidx[mesh.target(h)];
+                        h = mesh.next(h);
+                    } while (h != h0);
+                    out << '\n';
+                    ++fcount;
+                }
+                std::cout << "Output: " << out_path << " (full mesh OBJ, watertight)" << std::endl;
+                std::cout << "Vertices: " << vcount << ", Faces: " << fcount << std::endl;
+                write_progress(1.0f);
+                std::cout << "SUCCESS (watertight, full OBJ)" << std::endl;
+                pause_if_needed();
+                return 0;
+            }
             std::ofstream out(out_path);
             if (out)
             {
@@ -468,6 +634,8 @@ int main(int argc, char* argv[])
                 }
             }
             write_progress(1.0f);
+            std::cout << "SUCCESS (watertight, no fill needed)" << std::endl;
+            pause_if_needed();
             return 0;
         }
         if (from_goz)
@@ -503,6 +671,8 @@ int main(int argc, char* argv[])
                 out_goz.writeMesh(fill_path.c_str());
         }
         write_progress(1.0f);
+        std::cout << "SUCCESS (watertight, full mesh re-emitted)" << std::endl;
+        pause_if_needed();
         return 0;
     }
 
@@ -593,8 +763,139 @@ int main(int argc, char* argv[])
 
     write_progress(0.85f);
 
+    // ---------- Remove small disconnected fragments ----------
+    if (opt_min_frac > 0.0 || opt_min_faces > 0)
+    {
+        std::size_t total = mesh.number_of_faces();
+        std::size_t threshold_frac = static_cast<std::size_t>(opt_min_frac * static_cast<double>(total));
+        std::size_t threshold_abs  = static_cast<std::size_t>(opt_min_faces);
+        std::size_t threshold = (std::max)(threshold_frac, threshold_abs);
+
+        if (threshold > 1 && total > 1)
+        {
+            typedef Mesh::Property_map<Mesh::Face_index, std::size_t> FCCMap;
+            FCCMap fccmap = mesh.add_property_map<Mesh::Face_index, std::size_t>("f:cc", 0).first;
+            std::size_t num_cc = PMP::connected_components(mesh, fccmap);
+
+            if (num_cc > 1)
+            {
+                std::vector<std::size_t> cc_size(num_cc, 0);
+                for (auto f : mesh.faces())
+                    ++cc_size[fccmap[f]];
+
+                std::size_t removed_components = 0;
+                std::size_t removed_faces = 0;
+                std::vector<std::size_t> small_ccs;
+                for (std::size_t i = 0; i < num_cc; ++i)
+                {
+                    if (cc_size[i] < threshold)
+                    {
+                        small_ccs.push_back(i);
+                        ++removed_components;
+                        removed_faces += cc_size[i];
+                    }
+                }
+
+                if (!small_ccs.empty())
+                {
+                    // Refresh original_faces: faces removed below should not appear in
+                    // either fill or original sets when serializing output.
+                    std::unordered_set<Mesh::Face_index> removed_face_set;
+                    for (auto f : mesh.faces())
+                    {
+                        std::size_t cc = fccmap[f];
+                        for (std::size_t s : small_ccs)
+                        {
+                            if (cc == s) { removed_face_set.insert(f); break; }
+                        }
+                    }
+                    PMP::remove_connected_components(mesh, small_ccs, fccmap);
+                    PMP::remove_isolated_vertices(mesh);
+                    mesh.collect_garbage();
+
+                    // Drop removed faces from original_faces tracker
+                    for (auto f : removed_face_set)
+                        original_faces.erase(f);
+                }
+
+                std::cout << "Fragments: components=" << num_cc
+                          << " threshold=" << threshold
+                          << " removed=" << removed_components
+                          << " (" << removed_faces << " faces)" << std::endl;
+            }
+            else
+            {
+                std::cout << "Fragments: single component, nothing to remove" << std::endl;
+            }
+
+            mesh.remove_property_map(fccmap);
+        }
+    }
+
+    write_progress(0.88f);
+    // ---------- end fragment removal ----------
+
     if (out_is_obj_patch)
     {
+        if (opt_full_obj)
+        {
+            // Full mesh OBJ with PolyGroup-as-group lines so Tool:Import in
+            // ZBrush rebuilds PolyGroups (orig=1, fill=2).
+            std::ofstream out(out_path);
+            if (!out)
+            {
+                std::cerr << "ERROR: Cannot open OBJ for write: " << out_path << std::endl;
+                pause_if_needed();
+                return 1;
+            }
+            out << "# ZMeshMend full mesh (PolyGroup as 'g group_N')\n";
+
+            // Rebuild a vertex index map (skip removed vertices/faces).
+            std::map<Mesh::Vertex_index, std::size_t> vidx;
+            std::size_t vcount = 0;
+            for (auto v : mesh.vertices())
+            {
+                const auto& p = mesh.point(v);
+                out << "v " << p.x() << ' ' << p.y() << ' ' << p.z() << '\n';
+                vidx[v] = ++vcount;
+            }
+
+            // Group faces by ZMeshMend tag: 1=original, 2=fill.
+            // Faces not in original_faces are fill (newly created during stitching).
+            // We emit all original faces first under "g group_1", then fill under "g group_2".
+            auto emit_group = [&](int gid, bool fill) {
+                bool first = true;
+                for (auto f : mesh.faces())
+                {
+                    bool is_orig = (original_faces.find(f) != original_faces.end());
+                    if (fill ? is_orig : !is_orig) continue;
+                    if (first)
+                    {
+                        out << "g group_" << gid << '\n';
+                        first = false;
+                    }
+                    out << 'f';
+                    auto h0 = mesh.halfedge(f);
+                    auto h = h0;
+                    do
+                    {
+                        out << ' ' << vidx[mesh.target(h)];
+                        h = mesh.next(h);
+                    } while (h != h0);
+                    out << '\n';
+                }
+            };
+            emit_group(1, /*fill=*/false);
+            emit_group(2, /*fill=*/true);
+
+            std::cout << "Output: " << out_path << " (full mesh OBJ + PolyGroups)" << std::endl;
+            std::cout << "Vertices: " << vcount << ", Faces: " << mesh.number_of_faces() << std::endl;
+            write_progress(1.0f);
+            std::cout << "SUCCESS (full OBJ)" << std::endl;
+            pause_if_needed();
+            return 0;
+        }
+
         write_fill_only_obj(mesh, original_faces, out_path);
         std::cout << "Fill PolyGroup mode: OBJ patch" << std::endl;
 
@@ -603,16 +904,17 @@ int main(int argc, char* argv[])
             write_fill_only_obj(mesh, original_faces, fill_path);
         }
 
-        if (argc >= 5)
+        if (!debug_obj.empty())
         {
-            std::string debug_obj(argv[4]);
             std::ofstream dout(debug_obj);
             if (dout && CGAL::IO::write_OBJ(dout, mesh))
                 std::cout << "Debug OBJ: " << debug_obj << std::endl;
         }
 
         write_progress(1.0f);
-        std::cout << "SUCCESS" << std::endl;
+        std::cout << "SUCCESS (OBJ patch)" << std::endl;
+        std::cout << "Output: " << out_path << std::endl;
+        pause_if_needed();
         return 0;
     }
 
@@ -643,6 +945,7 @@ int main(int argc, char* argv[])
     if (!out_goz.writeMesh(out_path.c_str()))
     {
         std::cerr << "ERROR: Cannot write output GoZ: " << out_path << std::endl;
+        pause_if_needed();
         return 1;
     }
 
@@ -651,16 +954,19 @@ int main(int argc, char* argv[])
         write_fill_only_goz(out_goz, mesh, original_faces, fill_path);
     }
 
-    if (argc >= 5)
+    if (!debug_obj.empty())
     {
-        std::string debug_obj(argv[4]);
         std::ofstream dout(debug_obj);
         if (dout && CGAL::IO::write_OBJ(dout, mesh))
             std::cout << "Debug OBJ: " << debug_obj << std::endl;
     }
 
     write_progress(1.0f);
-    std::cout << "SUCCESS" << std::endl;
+    std::cout << "SUCCESS (GoZ output)" << std::endl;
+    std::cout << "Output: " << out_path << std::endl;
+    std::cout << "Vertices: " << out_goz.m_vertexCount
+              << ", Faces: " << out_goz.m_faceCount << std::endl;
+    pause_if_needed();
 
     return 0;
 }

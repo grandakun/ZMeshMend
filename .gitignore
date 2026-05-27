@@ -4,6 +4,10 @@ Release/
 *.7z
 *.rar
 
+#reference
+reference/
+
+
 # Build
 ZMeshMendData/build/
 
