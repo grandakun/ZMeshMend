@@ -1,0 +1,17 @@
+# ZMeshMend Configuration
+# Edit values as needed.
+
+# Remove small disconnected fragments (1=yes, 0=no)
+removeSmallFragments=1
+
+# Minimum fraction of total faces to keep a fragment
+fragmentMinFraction=0.01
+
+# Minimum absolute face count to keep a fragment
+fragmentMinFaces=50
+
+# Number of rings to grow mask before deletion
+maskGrowRings=1
+
+# Number of mask sharpen passes before grow
+maskSharpenPasses=1

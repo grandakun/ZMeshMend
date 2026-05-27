@@ -1,0 +1,14 @@
+# Release
+Release/
+
+# Build
+ZMeshMendData/build/
+
+# Runtime temp files
+ZMeshMendData/progress.txt
+ZMeshMendData/NONE
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
