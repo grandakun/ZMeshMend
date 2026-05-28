@@ -1,5 +1,7 @@
 # ZMeshMend
 
+![ZMeshMend](pic/cover.png)
+
 [中文](#zmeshmend) | [English](#zmeshmend-1)
 
 ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 CGAL 智能曲率感知填充、碎片移除和遮罩驱动的模型清理。
