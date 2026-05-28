@@ -1,8 +1,18 @@
 # ZMeshMend
 
-ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 CGAL 智能曲率感知填充、碎片移除和遮罩驱动清理。
+[中文](#zmeshmend) | [English](#zmeshmend-1)
+
+ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 CGAL 智能曲率感知填充、碎片移除和遮罩驱动的模型清理。
 
 提供 **Python** 和 **ZScript** 两种版本，互不依赖。
+
+## 下载
+
+前往 [GitHub Releases](https://github.com/yourusername/ZMeshMend/releases) 下载最新版本：
+
+- **Python 版**: `Python_vX.X.X.zip`
+- **ZScript 版**: `ZScript_vX.X.X.zip`
+
 
 ## 版本对比
 
@@ -18,10 +28,11 @@ ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 
 
 | 功能 | 说明 |
 |------|------|
+| **Close All Holes** | ZBrush 内置算法快速兜底 |
 | **MendHoles + PolyGroup** | CGAL 算法智能填充，曲率感知，自动创建 PolyGroup (orig + fill) |
 | **Mask-Based Cleanup** | 遮罩 → 删除 → 智能填充，全自动流程 |
 | **Remove Small Fragments** | CGAL 连通性分析自动清理孤立碎片 |
-| **Close All Holes** | ZBrush 内置算法快速兜底 |
+
 
 ---
 
@@ -40,7 +51,7 @@ ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 
 
 1. 将 `ZMeshMend` 文件夹复制到：
    ```
-   C:\Program Files\Maxon\ZBrush 20XX\ZStartup\ZPlugs64\
+   X:\...\Maxon\ZBrush 20XX\ZStartup\ZPlugs64\ZMeshMend\
    ```
 
    最终结构：
@@ -56,7 +67,9 @@ ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 
 2. 启动 ZBrush，菜单 `ZScript` → `Load` → 选择 `ZMeshMend_ZScript.txt`
    ZBrush 会编译生成 `.zsc`，插件出现在 `ZPlugin` → `ZMeshMend` 面板。
 
-3. 如 `.zsc` 未生成，删除已有 `.zsc` 后重新 Load。
+3. 编程生成 `.zsc` 文件后，以后启动 ZBrush 即可自动加载插件。
+
+4. 如 `.zsc` 未生成，删除已有 `.zsc` 后重新 Load。
 
 ---
 
@@ -120,9 +133,7 @@ ZMeshMend/
 │   ├── GoZ_Utils.cpp / .h             # GoZ 工具函数
 │   ├── GoZ_Binary.h / GoZ_Config.h    # GoZ 格式定义
 │   └── *.dll                          # CGAL 运行时依赖
-└── Release/
-    ├── Python_v1.0.0/                 # Python 版发布包
-    └── ZScript_v1.0.0/                # ZScript 版发布包
+
 ```
 
 ## 依赖
@@ -135,3 +146,169 @@ ZMeshMend/
 
 - **GoZ SDK 文件**（`GoZ_Mesh.*`, `GoZ_Utils.*`, `GoZ_Binary.h`, `GoZ_Config.h`）：版权归 Maxon/Pixologic 所有
 - **其余代码**：MIT License
+
+## 作者
+
+- **开发者**: [Aniraiden]
+- **B站主页**: [(https://space.bilibili.com/3129234)]
+- **GitHub**: https://github.com/aniraiden
+- **项目主页**: https://github.com/aniraiden/ZMeshMend
+
+如有问题或建议，欢迎通过 GitHub Issues 反馈。
+
+---
+
+# ZMeshMend
+
+[中文](#zmeshmend) | [English](#zmeshmend-1)
+
+A ZBrush plugin for automatic mesh hole repair. Close all open holes with one click, featuring CGAL intelligent curvature-aware filling, fragment removal, and mask-driven model cleanup.
+
+Available in both **Python** and **ZScript** versions, independent of each other.
+
+## Download
+
+Visit [GitHub Releases](https://github.com/yourusername/ZMeshMend/releases) to download the latest version:
+
+- **Python Version**: `Python_vX.X.X.zip`
+- **ZScript Version**: `ZScript_vX.X.X.zip`
+
+## Version Comparison
+
+| | Python Version | ZScript Version |
+|---|---|---|
+| File | `ZMeshMend/ZMeshMend.py` | `ZMeshMend/ZMeshMend_ZScript.txt` |
+| Entry Point | `ZMeshMend_Launcher.py` | Load .txt directly |
+| Dependencies | ZBrush Python API (2026+) | ZFileUtils64.dll |
+| Compatibility | ZBrush 2026+ | ZBrush 2021+ (including older versions) |
+| CGAL Core | subprocess call | LaunchAppWithFile call |
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Close All Holes** | Quick fallback using ZBrush built-in algorithm |
+| **MendHoles + PolyGroup** | CGAL intelligent filling with curvature awareness, auto-creates PolyGroup (orig + fill) |
+| **Mask-Based Cleanup** | Mask → Delete → Smart Fill, fully automated workflow |
+| **Remove Small Fragments** | CGAL connectivity analysis for automatic isolated fragment cleanup |
+
+---
+
+## Python Version Installation
+
+1. Place the folder anywhere on your computer (no need to put it in the ZBrush plugin directory).
+
+2. In ZBrush: menu `ZScript` → `Python Scripting` → `Load`
+   Select `ZMeshMend_Launcher.py`
+
+3. The plugin panel will automatically appear in the ZBrush UI.
+
+> Python version requires ZBrush 2026 or later.
+
+## ZScript Version Installation
+
+1. Copy the `ZMeshMend` folder to:
+   ```
+   X:\...\Maxon\ZBrush 20XX\ZStartup\ZPlugs64\ZMeshMend\
+   ```
+
+   Final structure:
+   ```
+   ZStartup\ZPlugs64\ZMeshMend\
+     ZMeshMend_ZScript.txt
+     ZMeshMendData\
+       zmeshmend_core.exe
+       ZFileUtils64.dll
+       ...
+   ```
+
+2. Launch ZBrush, menu `ZScript` → `Load` → select `ZMeshMend_ZScript.txt`
+   ZBrush will compile and generate a `.zsc` file, and the plugin appears in the `ZPlugin` → `ZMeshMend` panel.
+
+3. Once the `.zsc` file is generated, the plugin will auto-load on subsequent ZBrush launches.
+
+4. If the `.zsc` is not generated, delete any existing `.zsc` and re-Load.
+
+---
+
+## Configuration
+
+Both versions share the same configuration file `ZMeshMend/ZMeshMend_config.txt`:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `maskSharpenPasses` | 1 | Number of mask sharpen passes |
+| `maskGrowRings` | 1 | Number of mask grow rings |
+| `removeSmallFragments` | 1 | Whether to remove small fragments |
+| `fragmentMinFraction` | 0.01 | Minimum face fraction to retain a fragment |
+| `fragmentMinFaces` | 50 | Absolute minimum face count to retain a fragment |
+
+ZScript version can also adjust settings directly in the panel's Settings sub-panel.
+
+---
+
+## Optional: Build CGAL Core
+
+Both versions share `zmeshmend_core.exe`. To rebuild:
+
+**Prerequisites:** Visual Studio 2022 + CMake 3.16+ + [vcpkg](https://github.com/microsoft/vcpkg)
+
+```bash
+# 1. Install CGAL (one-time)
+cd C:\path\to\vcpkg
+.\vcpkg install cgal:x64-windows
+
+# 2. Build
+cd ZMeshMendData
+powershell -File run_build.ps1
+```
+
+> The build output `zmeshmend_core.exe` is automatically copied to `ZMeshMendData/`. If not detected, the plugin falls back to ZBrush built-in algorithms.
+
+---
+
+## Project Structure
+
+```
+ZMeshMend/
+├── README.md
+├── ZMeshMend_Launcher.py              # Python version entry point
+├── ZMeshMend/
+│   ├── __init__.py
+│   ├── init.py
+│   ├── ZMeshMend.py                   # Python version main logic
+│   ├── ZMeshMend_ZScript.txt          # ZScript version main logic
+│   └── ZMeshMend_config.txt           # Shared configuration
+├── ZMeshMendData/
+│   ├── CMakeLists.txt                 # C++ build configuration
+│   ├── build.bat                      # One-click build (legacy)
+│   ├── run_build.ps1                  # One-click build (recommended)
+│   ├── zmeshmend_core.cpp             # CGAL hole filling engine
+│   ├── zmeshmend_core.exe             # Build output
+│   ├── ZFileUtils64.dll               # ZScript file utility DLL
+│   ├── ZMeshMend_pipeline.py          # Python pipeline helper
+│   ├── GoZ_Mesh.cpp / .h              # GoZ mesh I/O
+│   ├── GoZ_Utils.cpp / .h             # GoZ utility functions
+│   ├── GoZ_Binary.h / GoZ_Config.h    # GoZ format definitions
+│   └── *.dll                          # CGAL runtime dependencies
+```
+
+## Dependencies
+
+- **Python Version:** ZBrush 2026+ Python API (`zbrush` module)
+- **ZScript Version:** ZFileUtils64.dll (bundled)
+- **C++ Core:** CGAL 5.x, Boost 1.74+, Eigen3, GMP, MPFR
+
+## License
+
+- **GoZ SDK files** (`GoZ_Mesh.*`, `GoZ_Utils.*`, `GoZ_Binary.h`, `GoZ_Config.h`): Copyright Maxon/Pixologic
+- **All other code**: MIT License
+
+## Author
+
+- **Developer**: [Aniraiden]
+- **Bilibili**: [(https://space.bilibili.com/3129234)]
+- **GitHub**: https://github.com/aniraiden
+- **Project Homepage**: https://github.com/aniraiden/ZMeshMend
+
+For questions or suggestions, please submit them via GitHub Issues.
