@@ -168,7 +168,7 @@ Available in both **Python** and **ZScript** versions, independent of each other
 
 ## Download
 
-Visit [GitHub Releases](https://github.com/yourusername/ZMeshMend/releases) to download the latest version:
+Visit [GitHub Releases](https://github.com/aniraiden/ZMeshMend/releases) to download the latest version:
 
 - **Python Version**: `Python_vX.X.X.zip`
 - **ZScript Version**: `ZScript_vX.X.X.zip`
