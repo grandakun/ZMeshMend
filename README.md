@@ -8,7 +8,7 @@ ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 
 
 ## 下载
 
-前往 [GitHub Releases](https://github.com/yourusername/ZMeshMend/releases) 下载最新版本：
+前往 [GitHub Releases](https://github.com/aniraiden/ZMeshMend/releases) 下载最新版本：
 
 - **Python 版**: `Python_vX.X.X.zip`
 - **ZScript 版**: `ZScript_vX.X.X.zip`
