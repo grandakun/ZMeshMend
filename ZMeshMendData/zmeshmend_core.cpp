@@ -32,6 +32,9 @@
 #include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
 #include <CGAL/Polygon_mesh_processing/stitch_borders.h>
 #include <CGAL/Polygon_mesh_processing/connected_components.h>
+#include <CGAL/AABB_tree.h>
+#include <CGAL/AABB_traits.h>
+#include <CGAL/AABB_face_graph_triangle_primitive.h>
 #include <CGAL/boost/graph/helpers.h>
 #include <CGAL/IO/polygon_soup_io.h>
 
@@ -344,7 +347,20 @@ relax_wireframe(Mesh& mesh, int iterations, double factor)
 {
     if (iterations <= 0) return;
 
-    std::cout << "Relax: collecting boundary vertices..." << std::endl;
+    std::cout << "Relax: building reference surface AABB tree..." << std::endl;
+
+    Mesh ref_mesh = mesh;
+    if (!CGAL::is_triangle_mesh(ref_mesh))
+    {
+        CGAL::Polygon_mesh_processing::triangulate_faces(ref_mesh);
+    }
+
+    typedef CGAL::AABB_face_graph_triangle_primitive<Mesh> Primitive;
+    typedef CGAL::AABB_traits<Kernel, Primitive>           AABB_traits;
+    typedef CGAL::AABB_tree<AABB_traits>                   AABB_tree;
+
+    AABB_tree tree(faces(ref_mesh).first, faces(ref_mesh).second, ref_mesh);
+    tree.accelerate_distance_queries();
 
     std::set<Mesh::Vertex_index> boundary_set;
     for (auto h : mesh.halfedges())
@@ -357,20 +373,14 @@ relax_wireframe(Mesh& mesh, int iterations, double factor)
 
     int total_vtx = (int)mesh.number_of_vertices();
     int boundary_count = (int)boundary_set.size();
-    std::cout << "Relax: " << boundary_count << " boundary vertices constrained, "
+    std::cout << "Relax: " << boundary_count << " boundary vertices fixed, "
               << (total_vtx - boundary_count) << " interior vertices free, "
               << "iterations=" << iterations << " factor=" << factor << std::endl;
 
     std::vector<Point> new_positions(total_vtx);
-    std::vector<Vector> normals(total_vtx, Vector(0, 0, 0));
 
     for (int it = 0; it < iterations; ++it)
     {
-        for (auto v : mesh.vertices())
-        {
-            normals[(size_t)v] = vertex_normal(mesh, v);
-        }
-
         for (auto v : mesh.vertices())
         {
             if (boundary_set.count(v))
@@ -386,11 +396,12 @@ relax_wireframe(Mesh& mesh, int iterations, double factor)
                 continue;
             }
 
-            Vector laplacian(0, 0, 0);
+            double sx = 0, sy = 0, sz = 0;
             int neighbor_count = 0;
             Mesh::Halfedge_index h = h0;
             do {
-                laplacian = laplacian + (mesh.point(mesh.target(h)) - CGAL::ORIGIN);
+                const Point& q = mesh.point(mesh.target(h));
+                sx += q.x(); sy += q.y(); sz += q.z();
                 ++neighbor_count;
                 h = mesh.next(mesh.opposite(h));
             } while (h != h0);
@@ -401,17 +412,16 @@ relax_wireframe(Mesh& mesh, int iterations, double factor)
                 continue;
             }
 
-            laplacian = laplacian / (double)neighbor_count;
-            Point smoothed(laplacian.x(), laplacian.y(), laplacian.z());
+            const Point& cur = mesh.point(v);
+            Point laplacian(sx / neighbor_count, sy / neighbor_count, sz / neighbor_count);
 
-            Vector disp = smoothed - mesh.point(v);
+            double tx = cur.x() + (laplacian.x() - cur.x()) * factor;
+            double ty = cur.y() + (laplacian.y() - cur.y()) * factor;
+            double tz = cur.z() + (laplacian.z() - cur.z()) * factor;
+            Point target(tx, ty, tz);
 
-            const Vector& n = normals[(size_t)v];
-            double dot = disp * n;
-            Vector tangent_disp = (disp - n * dot) * factor;
-
-            Point moved = mesh.point(v) + tangent_disp;
-            new_positions[(size_t)v] = moved;
+            Point projected = tree.closest_point(target);
+            new_positions[(size_t)v] = projected;
         }
 
         for (auto v : mesh.vertices())
@@ -421,7 +431,7 @@ relax_wireframe(Mesh& mesh, int iterations, double factor)
     }
 
     int moved_count = total_vtx - boundary_count;
-    std::cout << "Relax: " << moved_count << " interior vertices relaxed, done." << std::endl;
+    std::cout << "Relax: " << moved_count << " interior vertices relaxed onto reference surface, done." << std::endl;
 }
 
 // ============================================================================
