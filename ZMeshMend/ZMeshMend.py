@@ -44,6 +44,7 @@ CONFIG = {
     "fragmentMinFaces": 50,
     "maskGrowRings": 1,
     "maskSharpenPasses": 1,
+    "smoothBorder": False,
     "smoothIterations": 2,
     "smoothRings": 3,
 }
@@ -54,6 +55,7 @@ _config_comment_map = {
     "fragmentMinFaces": "保留碎片所需的最小绝对面数",
     "maskGrowRings": "删除前扩展遮罩的环数",
     "maskSharpenPasses": "扩展前锐化遮罩的遍数",
+    "smoothBorder": "平滑边界模式（1=仅平滑, 0=正常补洞）",
     "smoothIterations": "边界平滑迭代次数（1-20）",
     "smoothRings": "边界平滑向内扩展圈数（1-20）",
 }
@@ -807,43 +809,6 @@ def _freeze_op(fn, desc="处理中"):
     zbc.freeze(wrapped)
 
 
-def _read_obj_vertices_faces(filepath):
-    """读取 OBJ 文件，返回 (顶点, 面, 组)"""
-    vertices = []
-    faces = []
-    groups = []
-    current_group = "default"
-
-    with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith("v "):
-                parts = line.split()
-                vertices.append((
-                    float(parts[1]),
-                    float(parts[2]),
-                    float(parts[3]),
-                ))
-            elif line.startswith("f "):
-                parts = line[1:]
-                indices = []
-                for p in parts.split():
-                    idx = int(p.split("/")[0])
-                    if idx < 0:
-                        idx = len(vertices) + idx + 1
-                    else:
-                        idx = idx
-                    indices.append(idx)
-                faces.append(indices)
-                groups.append(current_group)
-            elif line.startswith("g "):
-                current_group = line[2:].strip()
-
-    return vertices, faces, groups
-
-
 def _write_obj(filepath, vertices, faces, groups=None):
     """从顶点和面写入 OBJ 文件"""
     with open(filepath, "w", encoding="utf-8") as f:
@@ -904,7 +869,7 @@ def _find_connected_components(faces):
 
 def _remove_small_fragments(filepath, total_faces, min_frac, min_abs):
     """从 OBJ 文件中移除小型分离碎片"""
-    vertices, faces, groups = _read_obj_vertices_faces(filepath)
+    vertices, faces, groups = _read_obj_full(filepath)
 
     if len(faces) < 2:
         return False
@@ -1266,7 +1231,7 @@ def _fill_hole_smart(vertices, faces, loop, groups_list=None):
 
 def _process_holes_in_obj(filepath):
     """处理 OBJ 文件：检测并用球体拟合填充孔洞"""
-    vertices, faces, groups = _read_obj_vertices_faces(filepath)
+    vertices, faces, groups = _read_obj_full(filepath)
 
     boundary_edges = _find_boundary_edges(faces)
     if not boundary_edges:

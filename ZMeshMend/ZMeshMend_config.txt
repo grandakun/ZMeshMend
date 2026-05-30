@@ -16,6 +16,9 @@ maskGrowRings=1
 # Number of mask sharpen passes before grow
 maskSharpenPasses=1
 
+# Smooth border mode (1=smooth only, 0=normal fill)
+smoothBorder=0
+
 # Number of boundary smooth Chaikin iterations (1-20)
 smoothIterations=2
 
