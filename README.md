@@ -4,7 +4,7 @@
 
 [中文](#zmeshmend) | [English](#zmeshmend-1)
 
-ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 CGAL 智能曲率感知填充、碎片移除和遮罩驱动的模型清理。
+ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 CGAL 智能曲率感知填充、碎片移除、遮罩驱动的模型清理和平滑开放边缘。
 
 提供 **Python** 和 **ZScript** 两种版本，互不依赖。
 
@@ -12,8 +12,8 @@ ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 
 
 前往 [GitHub Releases](https://github.com/aniraiden/ZMeshMend/releases) 下载最新版本：
 
-- **Python 版**: `Python_vX.X.X.zip`
-- **ZScript 版**: `ZScript_vX.X.X.zip`
+- **Python 版**: `Python_v1.1.0-smooth.zip`
+- **ZScript 版**: `ZScript_v1.1.0-smooth.zip`
 
 
 ## 版本对比
@@ -34,6 +34,7 @@ ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 
 | **MendHoles + PolyGroup** | CGAL 算法智能填充，曲率感知，自动创建 PolyGroup (orig + fill) |
 | **Mask-Based Cleanup** | 遮罩 → 删除 → 智能填充，全自动流程 |
 | **Remove Small Fragments** | CGAL 连通性分析自动清理孤立碎片 |
+| **Smooth Open Edge** | 边界 Chaikin + Laplacian 多圈平滑，法线投影保持体积 |
 
 
 ---
@@ -86,6 +87,8 @@ ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 
 | `removeSmallFragments` | 1 | 是否移除小碎片 |
 | `fragmentMinFraction` | 0.01 | 碎片保留的最小面数占比 |
 | `fragmentMinFaces` | 50 | 碎片保留的绝对最小面数 |
+| `smoothIterations` | 2 | 平滑边缘迭代次数（1-20） |
+| `smoothRings` | 3 | 平滑边缘向内扩展圈数（1-20） |
 
 ZScript 版可直接在面板 Settings 子面板中调整。
 
@@ -122,7 +125,16 @@ ZMeshMend/
 │   ├── init.py
 │   ├── ZMeshMend.py                   # Python 版主逻辑
 │   ├── ZMeshMend_ZScript.txt          # ZScript 版主逻辑
-│   └── ZMeshMend_config.txt           # 共享配置
+│   ├── ZMeshMend_config.txt           # 共享配置
+├── doc/
+│   ├── project-reference.md            # 项目权威参考手册
+│   ├── architecture.md                 # 架构文档
+│   ├── roadmap.md                      # 开发路线图
+│   ├── smooth-open-edge.md             # 平滑边缘功能规划
+│   └── branches.md                     # 分支说明
+├── reference/                          # 外部参考资料（只读）
+│   ├── ZFileUtils_2021_01A/            # ZFileUtils 官方示例
+│   └── zscripting.txt                  # ZScript 语法参考
 ├── ZMeshMendData/
 │   ├── CMakeLists.txt                 # C++ 构建配置
 │   ├── build.bat                      # 一键编译（旧方式）
@@ -142,7 +154,7 @@ ZMeshMend/
 
 - **Python 版:** ZBrush 2026+ Python API（`zbrush` 模块）
 - **ZScript 版:** ZFileUtils64.dll（内置）
-- **C++ 核心:** CGAL 5.x, Boost 1.74+, Eigen3, GMP, MPFR
+- **C++ 核心:** CGAL 6.x, Boost 1.91+, Eigen3, GMP, MPFR
 
 ## 许可
 
@@ -164,7 +176,7 @@ ZMeshMend/
 
 [中文](#zmeshmend) | [English](#zmeshmend-1)
 
-A ZBrush plugin for automatic mesh hole repair. Close all open holes with one click, featuring CGAL intelligent curvature-aware filling, fragment removal, and mask-driven model cleanup.
+A ZBrush plugin for automatic mesh hole repair. Close all open holes with one click, featuring CGAL intelligent curvature-aware filling, fragment removal, mask-driven model cleanup, and smooth open edge processing.
 
 Available in both **Python** and **ZScript** versions, independent of each other.
 
@@ -172,8 +184,8 @@ Available in both **Python** and **ZScript** versions, independent of each other
 
 Visit [GitHub Releases](https://github.com/aniraiden/ZMeshMend/releases) to download the latest version:
 
-- **Python Version**: `Python_vX.X.X.zip`
-- **ZScript Version**: `ZScript_vX.X.X.zip`
+- **Python Version**: `Python_v1.1.0-smooth.zip`
+- **ZScript Version**: `ZScript_v1.1.0-smooth.zip`
 
 ## Version Comparison
 
@@ -193,6 +205,7 @@ Visit [GitHub Releases](https://github.com/aniraiden/ZMeshMend/releases) to down
 | **MendHoles + PolyGroup** | CGAL intelligent filling with curvature awareness, auto-creates PolyGroup (orig + fill) |
 | **Mask-Based Cleanup** | Mask → Delete → Smart Fill, fully automated workflow |
 | **Remove Small Fragments** | CGAL connectivity analysis for automatic isolated fragment cleanup |
+| **Smooth Open Edge** | Boundary Chaikin + Laplacian multi-ring smooth with normal projection |
 
 ---
 
@@ -244,6 +257,8 @@ Both versions share the same configuration file `ZMeshMend/ZMeshMend_config.txt`
 | `removeSmallFragments` | 1 | Whether to remove small fragments |
 | `fragmentMinFraction` | 0.01 | Minimum face fraction to retain a fragment |
 | `fragmentMinFaces` | 50 | Absolute minimum face count to retain a fragment |
+| `smoothIterations` | 2 | Smooth open edge iterations (1-20) |
+| `smoothRings` | 3 | Smooth open edge inward rings (1-20) |
 
 ZScript version can also adjust settings directly in the panel's Settings sub-panel.
 
@@ -280,7 +295,16 @@ ZMeshMend/
 │   ├── init.py
 │   ├── ZMeshMend.py                   # Python version main logic
 │   ├── ZMeshMend_ZScript.txt          # ZScript version main logic
-│   └── ZMeshMend_config.txt           # Shared configuration
+│   ├── ZMeshMend_config.txt           # Shared configuration
+├── doc/
+│   ├── project-reference.md            # Project authoritative reference
+│   ├── architecture.md                 # Architecture document
+│   ├── roadmap.md                      # Development roadmap
+│   ├── smooth-open-edge.md             # Smooth open edge spec
+│   └── branches.md                     # Branch overview
+├── reference/                          # External reference (read-only)
+│   ├── ZFileUtils_2021_01A/            # ZFileUtils official examples
+│   └── zscripting.txt                  # ZScript syntax reference
 ├── ZMeshMendData/
 │   ├── CMakeLists.txt                 # C++ build configuration
 │   ├── build.bat                      # One-click build (legacy)
@@ -299,7 +323,7 @@ ZMeshMend/
 
 - **Python Version:** ZBrush 2026+ Python API (`zbrush` module)
 - **ZScript Version:** ZFileUtils64.dll (bundled)
-- **C++ Core:** CGAL 5.x, Boost 1.74+, Eigen3, GMP, MPFR
+- **C++ Core:** CGAL 6.x, Boost 1.91+, Eigen3, GMP, MPFR
 
 ## License
 
