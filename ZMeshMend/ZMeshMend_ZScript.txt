@@ -146,6 +146,8 @@
 	]
 	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Smooth border mode (1=smooth only, 0=normal fill)",nl]]
 	[VarSet,cfgBuf,[StrMerge,cfgBuf,"smoothBorder=0",nl,nl]]
+	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Global wireframe relax mode (1=relax, 0=normal)",nl]]
+	[VarSet,cfgBuf,[StrMerge,cfgBuf,"relaxWireframe=0",nl,nl]]
 	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Border smooth iterations (1-20)",nl]]
 	[VarSet,cfgBuf,[StrMerge,cfgBuf,"smoothIterations=",gSmoothIter,nl,nl]]
 	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Border smooth rings inward (1-20)",nl]]

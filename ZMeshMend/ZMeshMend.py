@@ -47,7 +47,6 @@ CONFIG = {
     "smoothBorder": False,
     "smoothIterations": 2,
     "smoothRings": 3,
-    "relaxWireframe": False,
     "relaxIterations": 3,
 }
 
@@ -60,7 +59,6 @@ _config_comment_map = {
     "smoothBorder": "平滑边界模式（1=仅平滑, 0=正常补洞）",
     "smoothIterations": "边界平滑迭代次数（1-20）",
     "smoothRings": "边界平滑向内扩展圈数（1-20）",
-    "relaxWireframe": "全局布线放松模式（1=放松, 0=正常补洞）",
     "relaxIterations": "全局布线放松迭代次数（1-20）",
 }
 
