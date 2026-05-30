@@ -454,6 +454,14 @@ def _auto_groups():
         _log("警告：无法自动分组")
 
 
+def _show_all():
+    """显示所有几何体——删除隐藏面后必须显式恢复可见性。"""
+    try:
+        zbc.press("Tool:Visibility:ShowPt")
+    except Exception:
+        _log("警告：无法显示全部")
+
+
 def _invert_mask():
     """反转当前遮罩。尝试多个已知按钮路径。"""
     candidates = [
