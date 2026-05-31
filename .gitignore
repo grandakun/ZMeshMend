@@ -19,3 +19,6 @@ ZMeshMendData/NONE
 __pycache__/
 *.pyc
 *.pyo
+
+# IDE / AI
+.trae/
