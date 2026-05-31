@@ -8,14 +8,6 @@ ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 
 
 **v1.2.0**: 全面切换 GoZ binary 中转（原生携带 PolyGroup/Mask/UV），Python + ZScript 双版本统一。
 
-## 下载
-
-前往 [GitHub Releases](https://github.com/aniraiden/ZMeshMend/releases) 下载最新版本：
-
-- **Python 版**: `Python_vX.X.X.zip`
-- **ZScript 版**: `ZScript_vX.X.X.zip`
-
-
 ## 版本对比
 
 | | Python 版 | ZScript 版 |
@@ -38,8 +30,6 @@ ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 
 | **Relax Wireframe** | Laplacian 平滑 + 投影回原表面，边界顶点保护，保持体积和细节 |
 | **SubDiv Detection** | SDiv>1 时自动阻断操作，避免细分网格 GoZ 导入导致坐标偏移 |
 
-
----
 
 ## Python 版安装
 
@@ -135,9 +125,6 @@ ZMeshMend/
 │   ├── roadmap.md                      # 开发路线图
 │   ├── goz-pipeline-guide.md           # GoZ 管线完全指南
 │   └── branches.md                     # 分支说明
-├── reference/                          # 外部参考资料（只读）
-│   ├── ZFileUtils_2021_01A/
-│   └── zscripting.txt
 ├── ZMeshMendData/
 │   ├── CMakeLists.txt
 │   ├── build.bat / run_build.ps1      # 一键编译
@@ -181,12 +168,6 @@ A ZBrush plugin for automatic mesh hole repair with CGAL curvature-aware filling
 
 **v1.2.0**: Fully migrated to GoZ binary pipeline (native PolyGroup/Mask/UV), Python + ZScript unified.
 
-## Download
-
-Visit [GitHub Releases](https://github.com/aniraiden/ZMeshMend/releases) to download the latest version:
-
-- **Python Version**: `Python_vX.X.X.zip`
-- **ZScript Version**: `ZScript_vX.X.X.zip`
 
 ## Version Comparison
 
@@ -306,9 +287,6 @@ ZMeshMend/
 │   ├── roadmap.md                      # Development roadmap
 │   ├── goz-pipeline-guide.md           # GoZ pipeline guide
 │   └── branches.md                     # Branch overview
-├── reference/                          # External reference (read-only)
-│   ├── ZFileUtils_2021_01A/
-│   └── zscripting.txt
 ├── ZMeshMendData/
 │   ├── CMakeLists.txt
 │   ├── build.bat / run_build.ps1      # One-click build
