@@ -42,8 +42,8 @@
 typedef DWORD GoZ_ProcessID;
 
 #else   // GOZ_MAC
-#include <Carbon/Carbon.h>
-typedef ProcessSerialNumber GoZ_ProcessID;
+#include <sys/types.h>
+typedef pid_t GoZ_ProcessID;
 #endif  // GOZ_OS
 
 

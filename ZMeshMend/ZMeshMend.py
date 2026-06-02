@@ -26,8 +26,9 @@ from zbrush import commands as zbc
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 _CGAL_DATA_DIR = os.path.join(os.path.dirname(_SCRIPT_DIR), "ZMeshMendData")
-_CGAL_EXE_PATH = os.path.join(_CGAL_DATA_DIR, "zmeshmend_core.exe")
-_CGAL_EXE_REL = os.path.normpath(os.path.join("..", "ZMeshMendData", "zmeshmend_core.exe"))
+_CGAL_EXE_NAME = "zmeshmend_core.exe" if sys.platform.startswith("win") else "zmeshmend_core"
+_CGAL_EXE_PATH = os.path.join(_CGAL_DATA_DIR, _CGAL_EXE_NAME)
+_CGAL_EXE_REL = os.path.normpath(os.path.join("..", "ZMeshMendData", _CGAL_EXE_NAME))
 
 PALETTE_NAME = "ZMeshMend"
 SUBPALETTE_MAIN = f"{PALETTE_NAME}:Close Holes"
@@ -1504,7 +1505,7 @@ def do_smooth_open_edges(sender=""):
         _log("CGAL 核心未找到，无法执行平滑。")
         zbc.message_ok(
             "CGAL 核心未找到！\n\n"
-            "请将 zmeshmend_core.exe 编译到 ZMeshMendData/ 目录。",
+            f"请将 {_CGAL_EXE_NAME} 编译到 ZMeshMendData/ 目录。",
             "ZMeshMend"
         )
         return
@@ -1584,7 +1585,7 @@ def do_relax_wireframe(sender=""):
         _log("CGAL 核心未找到，无法执行布线放松。")
         zbc.message_ok(
             "CGAL 核心未找到！\n\n"
-            "请将 zmeshmend_core.exe 编译到 ZMeshMendData/ 目录。",
+            f"请将 {_CGAL_EXE_NAME} 编译到 ZMeshMendData/ 目录。",
             "ZMeshMend"
         )
         return
@@ -1701,7 +1702,7 @@ def do_close_with_polygroup_mask(sender=""):
                 pass
     else:
         _log("  未找到 CGAL EXE，使用 ZBrush 内置闭合孔洞")
-        _log("  启用 CGAL：请将 zmeshmend_core.exe 编译到 ZMeshMendData/ 目录")
+        _log(f"  启用 CGAL：请将 {_CGAL_EXE_NAME} 编译到 ZMeshMendData/ 目录")
         _close_holes()
         zbc.update(redraw_ui=True)
         _auto_groups()
@@ -2063,6 +2064,17 @@ def build_ui():
     )
 
     zbc.add_slider(
+        _ui_path("Settings:Fill Density"),
+        float(CONFIG["fillDensity"]),
+        100,
+        0.25,
+        5.0,
+        "补洞密度系数（0.25-5.0）。越大填充越密，越小越稀。",
+        _on_config_change,
+        width=1.0,
+    )
+
+    zbc.add_slider(
         _ui_path("Settings:Fragment Min Fraction"),
         CONFIG["fragmentMinFraction"],
         100,
@@ -2128,17 +2140,6 @@ def build_ui():
         width=1.0,
     )
 
-    zbc.add_slider(
-        _ui_path("Settings:Fill Density"),
-        float(CONFIG["fillDensity"]),
-        0.05,
-        0.25,
-        5.0,
-        "补洞密度系数（0.25-5.0）。越大填充越密，越小越稀。",
-        _on_config_change,
-        width=1.0,
-    )
-
     zbc.add_subpalette(SUBPALETTE_INFO, title_mode=0)
 
     zbc.add_button(
@@ -2173,7 +2174,8 @@ def build_ui():
     else:
         _log(f"CGAL 核心：未找到（使用 ZBrush 内置闭合孔洞）")
         _log(f"  预期位置：{_CGAL_EXE_REL}")
-        _log(f"  构建方式：ZMeshMendData/build.bat")
+        build_script = "build.bat" if sys.platform.startswith("win") else "build.sh"
+        _log(f"  构建方式：ZMeshMendData/{build_script}")
 
 
 def main():

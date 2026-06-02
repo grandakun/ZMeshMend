@@ -13,6 +13,7 @@ import subprocess
 import math
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_CGAL_EXE_NAME = "zmeshmend_core.exe" if sys.platform.startswith("win") else "zmeshmend_core"
 
 
 def log(msg):
@@ -215,7 +216,7 @@ def main():
     parser.add_argument(
         "--cgal-exe",
         default=None,
-        help="zmeshmend_core.exe 路径（默认: ../zmeshmend_core.exe）",
+        help=f"{_CGAL_EXE_NAME} 路径（默认: 当前脚本目录下的 {_CGAL_EXE_NAME}）",
     )
     parser.add_argument(
         "--no-merge",
@@ -233,7 +234,7 @@ def main():
 
     cgal_exe = args.cgal_exe
     if cgal_exe is None:
-        cgal_exe = os.path.join(_SCRIPT_DIR, "zmeshmend_core.exe")
+        cgal_exe = os.path.join(_SCRIPT_DIR, _CGAL_EXE_NAME)
 
     log("=" * 60)
     log("ZMeshMend CGAL Pipeline")
@@ -246,7 +247,7 @@ def main():
     success = call_cgal_fill(input_obj, patch_obj, cgal_exe)
 
     if not success:
-        log("CGAL 执行失败，请确认 zmeshmend_core.exe 已编译且可访问。")
+        log(f"CGAL 执行失败，请确认 {_CGAL_EXE_NAME} 已编译且可访问。")
         sys.exit(1)
 
     if args.no_merge:

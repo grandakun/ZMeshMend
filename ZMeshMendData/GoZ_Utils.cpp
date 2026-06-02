@@ -19,6 +19,14 @@
 
 #include "GoZ_Utils.h"
 
+#include <cctype>
+#include <cstring>
+#include <vector>
+
+#if defined(__APPLE__) && !defined(GOZ_WIN)
+#include <libproc.h>
+#endif
+
 
 // OS specific definitions...
 #ifdef  GOZ_WIN
@@ -566,31 +574,68 @@ GoZ_Utils::findRunningAppProcessID(char* pAppPath, GoZ_ProcessID* pOutProcessID)
 
 
 #else   // GOZ_MAC
-  // Initializes the resulting processID and returns false if the specified application path is invalid.
-  FSRef appPathRef, runningAppPathRef;
-  pOutProcessID->highLongOfPSN = 0;
-  pOutProcessID->lowLongOfPSN = kNoProcess;
-  if (FSPathMakeRef((const UInt8 *)pAppPath, &appPathRef, NULL) != noErr)
+  *pOutProcessID = 0;
+  if (!pAppPath || !*pAppPath)
     return false;
 
-  while (true)
+  #if defined(__APPLE__)
+  char targetPath[PROC_PIDPATHINFO_MAXSIZE];
+  strncpy(targetPath, pAppPath, sizeof(targetPath) - 1);
+  targetPath[sizeof(targetPath) - 1] = 0;
+  for (size_t i = 0, n = strlen(targetPath); i < n; ++i)
   {
-    // Gets the next running application, and returns false in case of any error.
-    if ((GetNextProcess(pOutProcessID)!=noErr) || ((pOutProcessID->highLongOfPSN==0) && (pOutProcessID->lowLongOfPSN==kNoProcess)))
-    {
-      pOutProcessID->highLongOfPSN = 0;
-      pOutProcessID->lowLongOfPSN = kNoProcess;
-      return false;
-    }
+    if (targetPath[i] == '\\') targetPath[i] = '/';
+  }
+  while (strlen(targetPath) > 1 && targetPath[strlen(targetPath) - 1] == '/')
+    targetPath[strlen(targetPath) - 1] = 0;
 
-    // Gets the location of the running application - just continue on next process in case of error.
-    if (GetProcessBundleLocation(pOutProcessID, &runningAppPathRef) != noErr)
+  int bytes = proc_listpids(PROC_ALL_PIDS, 0, nullptr, 0);
+  if (bytes <= 0)
+    return false;
+
+  std::vector<pid_t> pids(static_cast<size_t>(bytes) / sizeof(pid_t));
+  bytes = proc_listpids(PROC_ALL_PIDS, 0, pids.data(), bytes);
+  if (bytes <= 0)
+    return false;
+
+  const size_t targetLen = strlen(targetPath);
+  const bool targetIsBundle = (targetLen >= 4 && !strcmp_nocase(targetPath + targetLen - 4, ".app"));
+
+  for (int i = 0, count = bytes / static_cast<int>(sizeof(pid_t)); i < count; ++i)
+  {
+    pid_t pid = pids[static_cast<size_t>(i)];
+    if (pid <= 0)
       continue;
 
-    // If the running application has the same location: we found our application!
-    if (FSCompareFSRefs(&appPathRef, &runningAppPathRef) == noErr)
+    char processPath[PROC_PIDPATHINFO_MAXSIZE];
+    int pathLen = proc_pidpath(pid, processPath, sizeof(processPath));
+    if (pathLen <= 0)
+      continue;
+    if (pathLen < static_cast<int>(sizeof(processPath)))
+      processPath[pathLen] = 0;
+    else
+      processPath[sizeof(processPath) - 1] = 0;
+
+    for (size_t j = 0, n = strlen(processPath); j < n; ++j)
+    {
+      if (processPath[j] == '\\') processPath[j] = '/';
+    }
+
+    if (!strcmp_nocase(targetPath, processPath))
+    {
+      *pOutProcessID = pid;
       return true;
+    }
+
+    if (targetIsBundle && !strncmp_nocase(targetPath, processPath, static_cast<int>(targetLen))
+        && processPath[targetLen] == '/')
+    {
+      *pOutProcessID = pid;
+      return true;
+    }
   }
+  #endif
+
   return false;
 #endif  // GOZ_OS
 }
@@ -623,4 +668,3 @@ static int strncmp_nocase(const char* str1, const char* str2, int count)
   }
   return 0;
 }
-

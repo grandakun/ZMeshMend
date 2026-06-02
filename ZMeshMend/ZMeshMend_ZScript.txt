@@ -1,5 +1,5 @@
 //ZMeshMend ZScript Plugin - CGAL hole filling for ZBrush 2021+
-//Calls ZFileUtils64.dll + zmeshmend_core.exe directly (no Python required).
+//Calls ZFileUtils + zmeshmend_core directly (no Python required).
 //Mirror of ZFileUtils_TestZScript_2021.txt structure.
 
 //load this file through the ZScript:Load button
@@ -19,7 +19,7 @@
 [VarDef,scriptPath,""]//full path to this zscript
 [VarDef,scriptDir,""]//folder containing this zscript
 [VarDef,dataDir,""]//ZMeshMendData folder path
-[VarDef,exePath,""]//path to zmeshmend_core.exe
+[VarDef,exePath,""]//path to zmeshmend_core executable
 [VarDef,batPath,""]//path to launcher batch
 [VarDef,expPath,""]//path to exported GoZ binary (含 MASK16_LIST)
 [VarDef,impPath,""]//path to imported GoZ (含 PolyGroups + 顶点位置)
@@ -62,9 +62,9 @@
 	//Make sure we have the DLL and set its path
 	[If,[ZBrushInfo,16]==64,//64 bit
 		[If,isMac,
-			[VarSet,dllPath,"ZMeshMendData/ZFileUtils.lib"]
+			[VarSet,dllPath,"ZBRUSH_ZSTARTUP/ZPlugs64/ZMeshMendData/ZFileUtils.lib"]
 		,
-			[VarSet,dllPath,"ZMeshMendData/ZFileUtils64.dll"]
+			[VarSet,dllPath,"ZBRUSH_ZSTARTUP\ZPlugs64\ZMeshMendData\ZFileUtils64.dll"]
 		]
 	,//else 32 bit - no longer supported
 		[Note,"ZMeshMend requires 64-bit ZBrush.",,3,4737096,,300]
@@ -96,7 +96,11 @@
 	[VarSet,scriptDir,[FileNameExtract,scriptPath,1]]
 	//build subfolder paths
 	[VarSet,dataDir,[StrMerge,scriptDir,"ZMeshMendData/"]]
-	[VarSet,exePath,[StrMerge,dataDir,"zmeshmend_core.exe"]]
+	[If,isMac,
+		[VarSet,exePath,[StrMerge,dataDir,"zmeshmend_core"]]
+	,
+		[VarSet,exePath,[StrMerge,dataDir,"zmeshmend_core.exe"]]
+	]
 	[VarSet,expPath,[StrMerge,dataDir,expName]]
 	//ZBrush Tool:Export 凭文件名后缀 .goz 自动写 GoZ binary（含 MASK16_LIST）。
 	//ZBrush Tool:Import 凭 'GoZb' magic 自动识别 GoZ blob，PolyGroups 与 mask 一起保留。
@@ -226,7 +230,7 @@
 ]
 
 
-//Run zmeshmend_core.exe via direct LaunchAppWithFile (with args).
+//Run zmeshmend_core via direct LaunchAppWithFile.
 //Output is GoZ format - PolyGroups (orig=1, fill=2) preserved on import.
 [RoutineDef, RunCGAL,
 	[RoutineCall, CheckSystem]
@@ -234,7 +238,7 @@
 	[RoutineCall, ResolvePaths]
 	//ensure exe exists
 	[If,[FileExists,exePath],,
-		[Note,[StrMerge,"zmeshmend_core.exe not found at:",nl,exePath],,3,4737096,,500]
+		[Note,[StrMerge,"zmeshmend_core not found at:",nl,exePath],,3,4737096,,500]
 		[Exit]
 	]
 
@@ -279,7 +283,7 @@
 ]
 
 
-//Remove small disconnected fragments via zmeshmend_core.exe.
+//Remove small disconnected fragments via zmeshmend_core.
 //CGAL connected_components + remove_connected_components, controlled by
 //gMinFrac / gMinFaces sliders (mirrors ZMeshMend.py union-find logic).
 [RoutineDef, RemoveFragments,
@@ -294,7 +298,7 @@
 	[RoutineCall, CheckNoSubdiv]
 	[RoutineCall, ResolvePaths]
 	[If,[FileExists,exePath],,
-		[Note,[StrMerge,"zmeshmend_core.exe not found at:",nl,exePath],,3,4737096,,500]
+		[Note,[StrMerge,"zmeshmend_core not found at:",nl,exePath],,3,4737096,,500]
 		[Exit]
 	]
 
@@ -362,7 +366,7 @@
 	[RoutineCall, CheckNoSubdiv]
 	[RoutineCall, ResolvePaths]
 	[If,[FileExists,exePath],,
-		[Note,[StrMerge,"zmeshmend_core.exe not found at:",nl,exePath],,3,4737096,,500]
+		[Note,[StrMerge,"zmeshmend_core not found at:",nl,exePath],,3,4737096,,500]
 		[Exit]
 	]
 
@@ -434,7 +438,7 @@
 	[IPress, Tool:Geometry:Modify Topology:Del Hidden]
 	[IPress, Tool:Visibility:ShowPt]
 	[RoutineCall, RunCGAL]
-	//Fragment removal is now done inside zmeshmend_core.exe via --min-frac/--min-faces.
+	//Fragment removal is now done inside zmeshmend_core via --min-frac/--min-faces.
 	//We no longer call ZBrush DelLoose here; it would only be a no-op duplicate.
 	[Note,"Mask-Based Cleanup complete!",,3]
 ,,1]//end button

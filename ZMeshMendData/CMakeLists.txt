@@ -5,8 +5,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# CGAL can be provided via vcpkg (recommended) or system install.
-# When using vcpkg, pass -DCMAKE_TOOLCHAIN_FILE=C:/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
+# CGAL can be provided via vcpkg, Homebrew, or a system install.
+# macOS/Homebrew: brew install cmake cgal eigen boost gmp mpfr libomp
+if(APPLE)
+    set(CMAKE_MACOSX_RPATH ON)
+endif()
+
 find_package(CGAL REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenMP)
@@ -28,6 +32,8 @@ if(MSVC)
     set_target_properties(zmeshmend_core PROPERTIES
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
     )
+elseif(APPLE)
+    target_compile_options(zmeshmend_core PRIVATE -Wall -O3 -DNDEBUG)
 else()
     target_compile_options(zmeshmend_core PRIVATE -Wall -O3 -DNDEBUG)
 endif()

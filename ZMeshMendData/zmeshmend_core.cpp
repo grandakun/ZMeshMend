@@ -53,9 +53,17 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <cstdio>
 
-#ifdef _WIN32
+#if defined(_WIN32)
 #include <Windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#include <unistd.h>
+#include <limits.h>
+#else
+#include <unistd.h>
+#include <limits.h>
 #endif
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
@@ -72,6 +80,40 @@ static void write_progress(float value)
     {
         pf << static_cast<int>(value * 100.0f) << std::endl;
     }
+}
+
+static void set_working_directory_to_executable_dir()
+{
+#if defined(_WIN32)
+    char self[MAX_PATH];
+    DWORD n = GetModuleFileNameA(NULL, self, MAX_PATH);
+    if (n > 0 && n < MAX_PATH)
+    {
+        char* slash = strrchr(self, '\\');
+        if (slash) { *slash = '\0'; SetCurrentDirectoryA(self); }
+    }
+#elif defined(__APPLE__)
+    uint32_t size = PATH_MAX;
+    std::vector<char> self(size + 1, 0);
+    if (_NSGetExecutablePath(self.data(), &size) != 0)
+    {
+        self.assign(size + 1, 0);
+    }
+    if (_NSGetExecutablePath(self.data(), &size) == 0)
+    {
+        char* slash = strrchr(self.data(), '/');
+        if (slash) { *slash = '\0'; chdir(self.data()); }
+    }
+#else
+    char self[PATH_MAX];
+    ssize_t n = readlink("/proc/self/exe", self, sizeof(self) - 1);
+    if (n > 0)
+    {
+        self[n] = '\0';
+        char* slash = strrchr(self, '/');
+        if (slash) { *slash = '\0'; chdir(self); }
+    }
+#endif
 }
 
 static bool g_pause_on_exit = false;
@@ -865,16 +907,8 @@ int main(int argc, char* argv[])
     {
         zero_arg_mode = true;
         opt_full_obj  = true;
-#ifdef _WIN32
-        {
-            char self[MAX_PATH];
-            DWORD n = GetModuleFileNameA(NULL, self, MAX_PATH);
-            if (n > 0 && n < MAX_PATH)
-            {
-                char* slash = strrchr(self, '\\');
-                if (slash) { *slash = '\0'; SetCurrentDirectoryA(self); }
-            }
-        }
+        set_working_directory_to_executable_dir();
+#if defined(_WIN32)
         AllocConsole();
         freopen("CONOUT$", "w", stdout);
         freopen("CONOUT$", "w", stderr);
@@ -923,8 +957,10 @@ int main(int argc, char* argv[])
             if (opt_min_frac <= 0.0 && opt_min_faces <= 0)
                 opt_min_frac = opt_min_faces = 0; //两个参数都必须设置才能启用
         }
-        //零参数模式：始终暂停，以便用户可以看到控制台输出。
+        //零参数模式：Windows 下打开控制台并暂停，方便用户查看输出。
+#if defined(_WIN32)
         g_pause_on_exit = true;
+#endif
     }
     else
     {
