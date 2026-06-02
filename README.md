@@ -6,7 +6,7 @@
 
 ZBrush 网格孔洞自动修复插件。一键闭合所有开放孔洞，支持 CGAL 智能曲率感知填充、碎片移除、遮罩驱动的模型清理、平滑开放边缘和全局布线放松。
 
-**v1.2.0**: 全面切换 GoZ binary 中转（原生携带 PolyGroup/Mask/UV），Python + ZScript 双版本统一。
+**v1.21**: 全面切换 GoZ binary 中转（原生携带 PolyGroup/Mask/UV），Python + ZScript 双版本统一。
 
 ## 版本对比
 
@@ -166,7 +166,7 @@ ZMeshMend/
 
 A ZBrush plugin for automatic mesh hole repair with CGAL curvature-aware filling, fragment removal, mask-driven cleanup, smooth open edge processing, and global wireframe relaxation.
 
-**v1.2.0**: Fully migrated to GoZ binary pipeline (native PolyGroup/Mask/UV), Python + ZScript unified.
+**v1.21**: Fully migrated to GoZ binary pipeline (native PolyGroup/Mask/UV), Python + ZScript unified.
 
 
 ## Version Comparison
