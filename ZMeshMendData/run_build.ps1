@@ -1,17 +1,45 @@
 $ErrorActionPreference = 'Stop'
-$scriptDir = 'c:\Users\Administrator\Desktop\ZMeshMend\ZMeshMend\ZMeshMendData'
-$buildDir  = Join-Path $scriptDir 'build'
-$cmake     = 'C:\Users\Administrator\cmake\cmake-4.3.2-windows-x86_64\bin\cmake.exe'
-if (-not (Test-Path $cmake)) {
-    $cmake = 'C:\tools\cmake\cmake-4.3.3-windows-x86_64\bin\cmake.exe'
-}
-$vcpkg     = 'C:\Users\Administrator\Desktop\vcpkg'
-$toolchain = Join-Path $vcpkg 'scripts\buildsystems\vcpkg.cmake'
 
-if (-not (Test-Path $toolchain)) {
-    Write-Host "toolchain not at $toolchain, searching..."
-    $found = Get-ChildItem -Path $vcpkg -Recurse -Filter 'vcpkg.cmake' -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'buildsystems' } | Select-Object -First 1
-    if ($found) { $toolchain = $found.FullName; Write-Host "found at $toolchain" }
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+$buildDir  = Join-Path $scriptDir 'build'
+
+$cmakeCmd = Get-Command cmake -ErrorAction SilentlyContinue
+if ($cmakeCmd) {
+    $cmake = $cmakeCmd.Source
+} else {
+    $cmakeCandidates = @(
+        'C:\Program Files\CMake\bin\cmake.exe',
+        'C:\tools\cmake\bin\cmake.exe'
+    )
+    $cmake = $cmakeCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+}
+
+if (-not $cmake -or -not (Test-Path $cmake)) {
+    throw 'cmake.exe not found. Please install CMake or add it to PATH.'
+}
+
+$vcpkgCandidates = @()
+if ($env:VCPKG_ROOT) { $vcpkgCandidates += $env:VCPKG_ROOT }
+$vcpkgCandidates += @(
+    'C:\vcpkg',
+    'C:\dev\vcpkg',
+    'C:\tools\vcpkg',
+    (Join-Path $env:USERPROFILE 'vcpkg'),
+    (Join-Path $env:USERPROFILE 'Desktop\vcpkg\vcpkg-master')
+)
+
+$toolchain = $null
+foreach ($candidate in $vcpkgCandidates) {
+    if (-not $candidate) { continue }
+    $candidateToolchain = Join-Path $candidate 'scripts\buildsystems\vcpkg.cmake'
+    if (Test-Path $candidateToolchain) {
+        $toolchain = $candidateToolchain
+        break
+    }
+}
+
+if (-not $toolchain) {
+    throw 'vcpkg toolchain not found. Please install vcpkg and set VCPKG_ROOT, or place it in a common location such as C:\vcpkg.'
 }
 
 Write-Host "Using cmake: $cmake"

@@ -859,6 +859,7 @@ int main(int argc, char* argv[])
     bool   opt_relax_wireframe   = false;
     int    opt_relax_iterations  = 3;
     double opt_relax_factor      = 1.0;
+    double opt_fill_density      = 1.0;
 
     if (argc < 3)
     {
@@ -915,6 +916,7 @@ int main(int argc, char* argv[])
                 }
                 else if (sscanf(line, "relaxIterations=%d", &vi) == 1)    { opt_relax_iterations = vi; }
                 else if (sscanf(line, "relaxFactor=%lf", &vd) == 1)      { opt_relax_factor = vd; }
+                else if (sscanf(line, "fillDensity=%lf", &vd) == 1)      { opt_fill_density = vd; }
             }
             fclose(cf);
 
@@ -975,6 +977,10 @@ int main(int argc, char* argv[])
         {
             opt_relax_factor = std::atof(argv[++i]);
         }
+        else if (a == "--fill-density" && i + 1 < argc)
+        {
+            opt_fill_density = std::atof(argv[++i]);
+        }
         else if (!a.empty() && a[0] != '-')
         {
             // out_path 之后的第一个位置参数 -> fill_path；第二个 -> debug_obj
@@ -983,6 +989,9 @@ int main(int argc, char* argv[])
         }
     }
     }
+
+    if (opt_fill_density <= 0.0)
+        opt_fill_density = 1.0;
 
     auto ends_with = [](const std::string& s, const std::string& suf) {
         if (s.size() < suf.size()) return false;
@@ -1473,14 +1482,17 @@ int main(int argc, char* argv[])
 
         Mesh::size_type fc_before = mesh.number_of_faces();
 
-        auto [ok, fo, vo] = PMP::triangulate_refine_and_fair_hole(mesh, h);
+        auto [ok, fo, vo] = PMP::triangulate_refine_and_fair_hole(
+            mesh,
+            h,
+            CGAL::parameters::density_control_factor(opt_fill_density));
 
         Mesh::size_type fc_after = mesh.number_of_faces();
         int added = static_cast<int>(fc_after - fc_before);
 
         if (ok)
         {
-            std::cout << "OK (refine+fair)";
+            std::cout << "OK (refine+fair, density=" << opt_fill_density << ")";
             if (added > 0)
                 std::cout << ", " << added << " faces added";
             std::cout << std::endl;

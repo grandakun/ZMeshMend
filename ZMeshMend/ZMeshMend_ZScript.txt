@@ -38,6 +38,7 @@
 [VarDef,gRemoveFrag,1]//removeSmallFragments switch (0/1)
 [VarDef,gMinFrac,0.01]//fragmentMinFraction (0.0-0.5)
 [VarDef,gMinFaces,50]//fragmentMinFaces (1-500)
+[VarDef,gFillDensity,1.0]//fillDensity (0.25-4.0)
 [VarDef,gSmoothIter,2]//smoothIterations (1-20)
 [VarDef,gSmoothRings,3]//smoothRings (1-20)
 [VarDef,gRelaxIter,3]//relaxIterations (1-20)
@@ -132,31 +133,21 @@
 //Save current settings to zmeshmend_config.txt using atomic temp+rename.
 //Writes to a temp file first, then renames to avoid partial/stale reads.
 [RoutineDef, SaveConfig,
-	[VarSet,cfgBuf,[StrMerge,"# ZMeshMend Configuration",nl,"# Edit values as needed.",nl,nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Number of mask sharpen passes before grow",nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"maskSharpenPasses=",gPasses,nl,nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Number of rings to grow mask before deletion",nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"maskGrowRings=",gRings,nl,nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Remove small disconnected fragments (1=yes, 0=no)",nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"removeSmallFragments=",gRemoveFrag,nl,nl]]
+	//Keep config text compact so ZScript string truncation does not drop fillDensity.
+	[VarSet,cfgBuf,[StrMerge,"fillDensity=",gFillDensity,nl]]
+	[VarSet,cfgBuf,[StrMerge,cfgBuf,"maskSharpenPasses=",gPasses,nl]]
+	[VarSet,cfgBuf,[StrMerge,cfgBuf,"maskGrowRings=",gRings,nl]]
+	[VarSet,cfgBuf,[StrMerge,cfgBuf,"removeSmallFragments=",gRemoveFrag,nl]]
 	[If, gRemoveFrag==1,
-		[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Minimum fraction of total faces to keep a fragment",nl]]
-		[VarSet,cfgBuf,[StrMerge,cfgBuf,"fragmentMinFraction=",gMinFrac,nl,nl]]
-		[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Minimum absolute face count to keep a fragment",nl]]
+		[VarSet,cfgBuf,[StrMerge,cfgBuf,"fragmentMinFraction=",gMinFrac,nl]]
 		[VarSet,cfgBuf,[StrMerge,cfgBuf,"fragmentMinFaces=",gMinFaces,nl]]
 	]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Smooth border mode (1=smooth only, 0=normal fill)",nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"smoothBorder=0",nl,nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Global wireframe relax mode (1=relax, 0=normal)",nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"relaxWireframe=0",nl,nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Border smooth iterations (1-20)",nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"smoothIterations=",gSmoothIter,nl,nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Border smooth rings inward (1-20)",nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"smoothRings=",gSmoothRings,nl,nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Global wireframe relax iterations (1-20)",nl]]
+	[VarSet,cfgBuf,[StrMerge,cfgBuf,"smoothBorder=0",nl]]
+	[VarSet,cfgBuf,[StrMerge,cfgBuf,"relaxWireframe=0",nl]]
+	[VarSet,cfgBuf,[StrMerge,cfgBuf,"smoothIterations=",gSmoothIter,nl]]
+	[VarSet,cfgBuf,[StrMerge,cfgBuf,"smoothRings=",gSmoothRings,nl]]
 	[VarSet,cfgBuf,[StrMerge,cfgBuf,"relaxIterations=",gRelaxIter,nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"# Global wireframe relax damping factor (0.1-1.0)",nl]]
-	[VarSet,cfgBuf,[StrMerge,cfgBuf,"relaxFactor=",gRelaxFactor,nl,nl]]
+	[VarSet,cfgBuf,[StrMerge,cfgBuf,"relaxFactor=",gRelaxFactor,nl]]
 
 	//Delete temp first
 	[VarSet,tmpPath,[StrMerge,dataDir,"zmeshmend_tmp.txt"]]
@@ -545,6 +536,13 @@
 [ISlider,"ZPlugin:ZMeshMend:Settings:Relax Factor",0.3,0.05,0.1,1.0,
 	"Relax damping factor (0.1-1.0). Lower = more conservative.",
 	[VarSet,gRelaxFactor,[IGet,"ZPlugin:ZMeshMend:Settings:Relax Factor"]]
+	[RoutineCall, ResolvePaths]
+	[RoutineCall, SaveConfig]
+,,1]
+
+[ISlider,"ZPlugin:ZMeshMend:Settings:Fill Density",1.0,0.05,0.25,5.0,
+	"Hole fill density factor (0.25-5.0). Higher = denser fill.",
+	[VarSet,gFillDensity,[IGet,"ZPlugin:ZMeshMend:Settings:Fill Density"]]
 	[RoutineCall, ResolvePaths]
 	[RoutineCall, SaveConfig]
 ,,1]

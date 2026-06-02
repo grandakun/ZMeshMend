@@ -39,24 +39,26 @@ CONFIG_PATH = os.path.join(_SCRIPT_DIR, "ZMeshMend_config.txt")
 _cgal_available_cache = None
 
 CONFIG = {
+    "maskSharpenPasses": 1,
+    "maskGrowRings": 1,
     "removeSmallFragments": True,
     "fragmentMinFraction": 0.01,
     "fragmentMinFaces": 50,
-    "maskGrowRings": 1,
-    "maskSharpenPasses": 1,
+    "fillDensity": 1.0,
     "smoothBorder": False,
     "smoothIterations": 2,
     "smoothRings": 3,
     "relaxIterations": 3,
-    "relaxFactor": 1.0,
+    "relaxFactor": 0.3,
 }
 
 _config_comment_map = {
+    "maskSharpenPasses": "扩展前锐化遮罩的遍数",
+    "maskGrowRings": "删除前扩展遮罩的环数",
     "removeSmallFragments": "移除小型分离碎片（1=是, 0=否）",
     "fragmentMinFraction": "保留碎片所需的最小面数占比",
     "fragmentMinFaces": "保留碎片所需的最小绝对面数",
-    "maskGrowRings": "删除前扩展遮罩的环数",
-    "maskSharpenPasses": "扩展前锐化遮罩的遍数",
+    "fillDensity": "补洞密度系数（0.25-5.0，越大越密）",
     "smoothBorder": "平滑边界模式（1=仅平滑, 0=正常补洞）",
     "smoothIterations": "边界平滑迭代次数（1-20）",
     "smoothRings": "边界平滑向内扩展圈数（1-20）",
@@ -129,7 +131,13 @@ def _call_cgal_fill(input_obj, output_goz, fill_goz=None, debug_obj=None):
 
     返回 (成功, faces_added)。faces_added 为 -1 表示无法解析。
     """
-    args = [_CGAL_EXE_PATH, input_obj, output_goz]
+    args = [
+        _CGAL_EXE_PATH,
+        input_obj,
+        output_goz,
+        "--fill-density",
+        str(CONFIG["fillDensity"]),
+    ]
     if fill_goz:
         args.append(fill_goz)
     else:
@@ -1924,6 +1932,9 @@ def _on_config_change(sender="", value=0.0):
     elif name == "Fragment Min Faces":
         CONFIG["fragmentMinFaces"] = int(value)
         save_config()
+    elif name == "Fill Density":
+        CONFIG["fillDensity"] = round(float(value), 2)
+        save_config()
     elif name == "Mask Grow Rings":
         CONFIG["maskGrowRings"] = int(value)
         save_config()
@@ -2021,6 +2032,28 @@ def build_ui():
 
     zbc.add_subpalette(SUBPALETTE_CONF, title_mode=0)
 
+    zbc.add_slider(
+        _ui_path("Settings:Mask Sharpen Passes"),
+        float(CONFIG["maskSharpenPasses"]),
+        1,
+        0.0,
+        5.0,
+        "扩展前锐化遮罩的遍数。",
+        _on_config_change,
+        width=1.0,
+    )
+
+    zbc.add_slider(
+        _ui_path("Settings:Mask Grow Rings"),
+        float(CONFIG["maskGrowRings"]),
+        1,
+        0.0,
+        5.0,
+        "删除面前扩展遮罩的环数。",
+        _on_config_change,
+        width=1.0,
+    )
+
     zbc.add_switch(
         _ui_path("Settings:Remove Small Fragments"),
         CONFIG["removeSmallFragments"],
@@ -2047,28 +2080,6 @@ def build_ui():
         1.0,
         500.0,
         "保留碎片所需的最小绝对面数。",
-        _on_config_change,
-        width=1.0,
-    )
-
-    zbc.add_slider(
-        _ui_path("Settings:Mask Grow Rings"),
-        float(CONFIG["maskGrowRings"]),
-        1,
-        0.0,
-        5.0,
-        "删除面前扩展遮罩的环数。",
-        _on_config_change,
-        width=1.0,
-    )
-
-    zbc.add_slider(
-        _ui_path("Settings:Mask Sharpen Passes"),
-        float(CONFIG["maskSharpenPasses"]),
-        1,
-        0.0,
-        5.0,
-        "扩展前锐化遮罩的遍数。",
         _on_config_change,
         width=1.0,
     )
@@ -2113,6 +2124,17 @@ def build_ui():
         0.1,
         1.0,
         "全局布线放松阻尼（0.1-1.0）。越小越保守，越大越激进。",
+        _on_config_change,
+        width=1.0,
+    )
+
+    zbc.add_slider(
+        _ui_path("Settings:Fill Density"),
+        float(CONFIG["fillDensity"]),
+        0.05,
+        0.25,
+        5.0,
+        "补洞密度系数（0.25-5.0）。越大填充越密，越小越稀。",
         _on_config_change,
         width=1.0,
     )

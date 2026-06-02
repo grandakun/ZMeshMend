@@ -166,8 +166,8 @@ bool
 GoZ_Utils::writeGoZBloc(FILE* pFile, int itemTag, int itemsCount, void *pItems, float modifier)
 {
   int headerSize = sizeof(GoZ_Header);
-  int dataSize = 0;
-  int padSize = 0;
+  size_t dataSize = 0;
+  size_t padSize = 0;
   switch (itemTag)
   {
   case GoZ_TAG_END_OF_FILE:
@@ -226,13 +226,13 @@ GoZ_Utils::writeGoZBloc(FILE* pFile, int itemTag, int itemsCount, void *pItems, 
   header.tag = itemTag;
   header.modifier = modifier;
   header.iCount = itemsCount;
-  header.size = headerSize + dataSize + padSize;
+  header.size = static_cast<unsigned int>(headerSize + dataSize + padSize);
   if (fwrite(&header, 1, sizeof(GoZ_Header), pFile) != sizeof(GoZ_Header))
     return false;
 
   if (dataSize && (fwrite(pItems, 1, dataSize, pFile)!=dataSize))
     return false;
-  if (padSize && fseek(pFile, ftell(pFile)+padSize, SEEK_SET))
+  if (padSize && fseek(pFile, ftell(pFile) + static_cast<long>(padSize), SEEK_SET))
     return false;
   return true;
 }
@@ -382,13 +382,13 @@ GoZ_Utils::readStringPref(const char* pFileName, const char* pPrefName, char* pO
     return false;
 
   // Removes start/end commas if any.
-  int start=0, end=strlen(str);
+  size_t start = 0, end = strlen(str);
   if ((end>=2) && (str[0]==34) && (str[end-1]==34))
     ++start, --end;
 
   // Truncs the string if needed.
-  if ((end-start) >= pOutPrefValueSize)
-    end = start+pOutPrefValueSize-1;
+  if ((end-start) >= static_cast<size_t>(pOutPrefValueSize))
+    end = start + static_cast<size_t>(pOutPrefValueSize) - 1;
 
   // Copy the "cleaned" string.
   str[end] = 0;
@@ -512,7 +512,7 @@ GoZ_Utils::findRunningAppProcessID(char* pAppPath, GoZ_ProcessID* pOutProcessID)
     return false;
 
   // Replaces all backslashes by slashes in the full application path.
-  unsigned int i, n;
+  size_t i, n;
   for (i=0, n=strlen(pAppPath); i<n; ++i) if (pAppPath[i] == '\\')  pAppPath[i] = '/';
 
   // Loops on every running process, and tests if it matches the same application path.
