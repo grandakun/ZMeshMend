@@ -24,9 +24,7 @@ __pycache__/
 # IDE / AI
 .trae/
 .DS_Store
-ZMeshMendData/ZFileUtils.lib
 ZMeshMendData/ZFileUtilsInc.txt
-ZMeshMendData/zmeshmend_core
 ZMeshMendData/zmeshmend_export.goz
 ZMeshMendData/zmeshmend_import.goz
 ZMeshMendData/zmeshmend_startup.log
