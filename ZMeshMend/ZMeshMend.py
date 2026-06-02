@@ -13,7 +13,7 @@
 """
 
 __author__ = "ZMeshMend Rebuild"
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 import os
 import sys
@@ -1961,7 +1961,7 @@ def _on_config_change(sender="", value=0.0):
 def _on_info_click(sender=""):
     """显示插件信息"""
     zbc.message_ok(
-        "ZMeshMend v1.2.0\n\n"
+        "ZMeshMend v1.2.1\n\n"
         "1. CGAL 曲率感知补洞 + PolyGroup 标记\n"
         "2. 遮罩驱动网格清理\n"
         "3. 小碎片自动移除\n"
@@ -2166,7 +2166,7 @@ def build_ui():
     zbc.maximize(SUBPALETTE_CONF)
     zbc.maximize(SUBPALETTE_INFO)
 
-    _log("ZMeshMend v1.2.0 已加载")
+    _log("ZMeshMend v1.2.1 已加载")
     _log(f"配置路径：{CONFIG_PATH}")
     if _cgal_available():
         _log(f"CGAL 核心：{_CGAL_EXE_REL}")

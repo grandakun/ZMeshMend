@@ -464,7 +464,7 @@
 
 //~~~About~~~
 [IButton,"ZPlugin:ZMeshMend:About ZMeshMend","Show plugin information and version.",
-	[VarSet,aboutMsg,"ZMeshMend ZScript v1.2.0"]
+	[VarSet,aboutMsg,"ZMeshMend ZScript v1.2.1"]
 	[VarSet,aboutMsg,[StrMerge,aboutMsg,nl,nl,"1. CGAL curvature-aware fill + PolyGroup"]]
 	[VarSet,aboutMsg,[StrMerge,aboutMsg,nl,"2. Mask-driven cleanup"]]
 	[VarSet,aboutMsg,[StrMerge,aboutMsg,nl,"3. Small fragment removal"]]
