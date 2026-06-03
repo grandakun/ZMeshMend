@@ -10,7 +10,6 @@ reference/
 
 # Build
 ZMeshMendData/build/
-ZMeshMendData/zmeshmend_core.exe
 
 # Runtime temp files
 ZMeshMendData/progress.txt
